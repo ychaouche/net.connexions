@@ -1,2 +1,3 @@
 # net.connexions
-testing github copilot
+Live incoming network connexions annotated with IP geolocation and reputation
+![preview][net.connexions.png]
