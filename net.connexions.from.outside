@@ -1,0 +1,4 @@
+#!/bin/bash -i
+# -i for pretty.ip.geo
+
+net.connexions "$_tcpdump_filter_default and src $_tcpdump_filter_outside" | pretty.ip.geo 3 

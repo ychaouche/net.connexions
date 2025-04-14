@@ -1,0 +1,28 @@
+#!/bin/bash
+
+revip=$(net.ip.reverse "$1")
+
+# parsing a string where spaces can be a problem
+# results=$(dig +short $revip.zen.spamhaus.org @10.10.10.7)
+
+# better way to retrive results in an array
+mapfile -t results < <(dig +short $revip.zen.spamhaus.org)
+(( ! ${#results[@]} )) && { echo "clean"; exit 0; }
+for result in "${results[@]}"
+do
+    case "$result" in
+	127.0.0.2)
+	    echo "SBL      : SPAM sender"
+	    ;;
+	127.0.0.3)
+	    echo "CSS      : snowshoe"
+	    ;;
+	127.0.0.[4-7])
+	    echo "XBL/CBL  : trojans, exploits"
+	    ;;
+	127.0.0.1[01])
+	    echo "PBL(ISP) : not supposed to send mail"
+	    ;;
+    esac
+done
+exit 1

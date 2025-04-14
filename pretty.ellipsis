@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# on ne peut pas utiliser $COLUMNS car bash n'est pas interactif...
+# awk -vCOLUMNS=${1:-$COLUMNS} '{ if (length($0) > COLUMNS) { printf("%s...\n",substr($0,0,COLUMNS-10))} else {print}}'
+
+# ...donc on utilise tput cols à la place
+if ! test -v COLUMNS
+then
+    COLUMNS=${1:-$(tput cols)}
+fi    
+awk -vCOLUMNS=$COLUMNS '{ if (length($0) > COLUMNS) { printf("%s...\n",substr($0,0,COLUMNS-10))} else {print}}'
+

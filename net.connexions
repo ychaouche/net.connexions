@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if (($# > 0))
+then
+    #echo "attention, mes arguments sont au nombre de $#, les voici: $*"
+    command_w_args="_asroot tcpdump $_tcpdump_default_args $*"
+else
+    #echo "ah ouais ? pas d'arguments ? et pourtant \$# vaut $#"
+    command_w_args="_asroot tcpdump $_tcpdump_default_args $_tcpdump_default_filter"
+fi
+echo "$command_w_args" > /dev/stderr
+$command_w_args

@@ -1,0 +1,4 @@
+#!/bin/bash
+IFS=.
+set -- $1
+echo $4.$3.$2.$1; 
