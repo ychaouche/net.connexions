@@ -1,28 +1,96 @@
-#!/bin/bash
+#!/bin/bash -i
+# we need -i for string.word.first.remove and debug
 
-revip=$(net.ip.reverse "$1")
+function cachewrite {
+    
+    [[ -z "$match" ]] && echo "$@"  >> /tmp/iprep
+}
 
-# parsing a string where spaces can be a problem
-# results=$(dig +short $revip.zen.spamhaus.org @10.10.10.7)
-
-# better way to retrive results in an array
-mapfile -t results < <(dig +short $revip.zen.spamhaus.org)
-(( ! ${#results[@]} )) && { echo "clean"; exit 0; }
-for result in "${results[@]}"
+while (($#))
 do
-    case "$result" in
-	127.0.0.2)
-	    echo "SBL      : SPAM sender"
+    case "$1" in
+	-c|--concise)
+	    concise=1
+	    #debug "concise"
 	    ;;
-	127.0.0.3)
-	    echo "CSS      : snowshoe"
+	-f|--full)
+	    full=1;
+	    #debug "full"
 	    ;;
-	127.0.0.[4-7])
-	    echo "XBL/CBL  : trojans, exploits"
+	--no-cache|-nc)
+	    nocache=1
+	    #debug "nocache"
 	    ;;
-	127.0.0.1[01])
-	    echo "PBL(ISP) : not supposed to send mail"
+	
+	*)
+	    ip="$1"
 	    ;;
     esac
+    shift
 done
+
+match="$(grep "$ip" /tmp/iprep)"
+#debug "match $match"
+if [[ -n "$match" ]] && ! [[ -v nocache ]]
+then
+#    debug "I should be here"
+    string.word.first.remove "$match"
+    
+    exit 1
+fi
+    
+revip="$(net.ip.reverse "$ip")"
+
+mapfile -t results < <(dig +short "$revip".zen.spamhaus.org)
+
+(( ! ${#results[@]} )) && {
+    echo "clean";
+    cachewrite "$ip clean" 
+    exit 0;
+    
+}
+
+declare -A output
+
+output["127.0.0.2:full"]="SBL      : SPAM sender"
+output["127.0.0.2:concise"]="SBL"
+
+output["127.0.0.3:full"]="CSS      : snowshoe"
+output["127.0.0.3:concise"]="CSS"
+
+output["127.0.0.4:full"]="XBL/CBL  : trojans, exploits"
+output["127.0.0.5:full"]="XBL/CBL  : trojans, exploits"
+output["127.0.0.6:full"]="XBL/CBL  : trojans, exploits"
+output["127.0.0.7:full"]="XBL/CBL  : trojans, exploits"
+output["127.0.0.4:concise"]="XBL/CBL"
+output["127.0.0.5:concise"]="XBL/CBL"
+output["127.0.0.6:concise"]="XBL/CBL"
+output["127.0.0.7:concise"]="XBL/CBL"
+
+output["127.0.0.10:full"]="PBL(ISP) : not supposed to send mail"
+output["127.0.0.11:full"]="PBL(ISP) : not supposed to send mail"
+output["127.0.0.10:concise"]="PBL(ISP)"
+output["127.0.0.11:concise"]="PBL(ISP)"
+
+for result in "${results[@]}"
+do
+    concise_output="${concise_output},${output["$result":"concise"]}"
+    full_output="$full_output"$'\n'"${output["$result":"full"]}"
+    
+done
+
+# enlever la première virgule
+concise_output="${concise_output:1}"
+# enlever le premier retour à la ligne
+full_output="${full_output:1}"
+
+# écrire dans un cache
+cachewrite "$ip ${concise_output}"
+
+if [ -v concise ]
+then
+    echo "${concise_output}"
+else
+    echo -e "${full_output}"
+fi
 exit 1
